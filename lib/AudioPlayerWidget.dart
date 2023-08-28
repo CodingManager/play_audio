@@ -37,12 +37,10 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
 
   // 创建一些假数据，用于测试。
   final List<SlAudioModel> audioGroup = [
-    SlAudioModel(title: "Song 1", playUrl: "https://cb-sycdn.kuwo.cn/c71e318e21669f4032a6f992bc33bf8e/64ec6d77/resource/n3/4/5/531980630.mp3"),
-    SlAudioModel(title: "Song 2", playUrl: "http://172.16.27.134:8000/static/audio/1b88ce75-1735-42a3-9507-2e696d86b2a0.mp3"),
-    SlAudioModel(title: "Song 3", playUrl: "http://172.16.27.134:8000/static/audio/1d83e3f9-bd2d-4962-8286-96cfaa0933b3.mp3"),
-    SlAudioModel(title: "Song 4", playUrl: "http://172.16.27.134:8000/static/audio/2e358d5c-59ce-4a31-9bad-6cf7716cea38.flac"),
-    SlAudioModel(title: "Song 5", playUrl: "http://172.16.27.134:8000/static/audio/4fe53f09-e31a-43ca-8134-60807c5045b1.mp3"),
-    SlAudioModel(title: "Song 6", playUrl: "http://172.16.27.134:8000/static/audio/4bcafb48-65e3-4537-941f-faae89434372.mp3"),
+    SlAudioModel(title: "香云缎", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/xiangyunduan.mp3"),
+    SlAudioModel(title: "Song 3", playUrl: "https://6v05y2726.goho.co/static/audio/1d83e3f9-bd2d-4962-8286-96cfaa0933b3.mp3"),
+    SlAudioModel(title: "Song 5", playUrl: "https://6v05y2726.goho.co/static/audio/4fe53f09-e31a-43ca-8134-60807c5045b1.mp3"),
+    SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/audio/4bcafb48-65e3-4537-941f-faae89434372.mp3"),
 
    ];
 
@@ -55,18 +53,18 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
       appBar: AppBar(title: Text('Music Player')),
       body: Column(
         children: [
-          RotationTransition(
-            turns: _linearAnimation,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(width: 2),
-                image: DecorationImage(image: AssetImage('assets/audio/images/play_controll_default_cover_01.png'), fit: BoxFit.fill),
-              ),
-            ),
-          ),
+          // RotationTransition(
+          //   turns: _linearAnimation,
+          //   child: Container(
+          //     width: 200,
+          //     height: 200,
+          //     decoration: BoxDecoration(
+          //       shape: BoxShape.circle,
+          //       border: Border.all(width: 2),
+          //       image: DecorationImage(image: AssetImage('assets/audio/images/play_controll_default_cover_01.png'), fit: BoxFit.fill),
+          //     ),
+          //   ),
+          // ),
           // 播放列表
           Expanded(child: _PlaylistWidget()),
 
@@ -91,8 +89,6 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
                     _animationController.stop();
                     break;
                   case PlayerState.completed:
-                    break;
-                  case PlayerState.disposed:
                     break;
                     // TODO: Handle this case.
                 }

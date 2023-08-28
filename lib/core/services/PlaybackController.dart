@@ -103,19 +103,17 @@ class PlaybackController with ChangeNotifier {
         Logger.error("音频地址为空");
         return;
       }else {
+        await _audioPlayer.play(UrlSource(audioModel.playUrl!));
         // 播放音频
-        try {
-          await _audioPlayer.play(UrlSource(audioModel.playUrl!));
-        } on TimeoutException {
-          Logger.error("播放音频超时");
-          // 如果播放音频超时，直接设置播放状态为播放结束，这样就不会再有回调了。
-          // _audioPlayer.state = PlayerState.completed;
-          _audioPlayer.stop();
-        } on AudioPlayerException {
-          Logger.error("播放音频出现了异常");
-        } catch (e) {
-          Logger.error("void startPlay()  播放音乐出现了异常：$e");
-        }
+        // try {
+        //   await _audioPlayer.play(UrlSource(audioModel.playUrl!));
+        // } on TimeoutException {
+        //   Logger.error("播放音频超时");
+        //   // 如果播放音频超时，直接设置播放状态为播放结束，这样就不会再有回调了。
+        //   // _audioPlayer.state = PlayerState.completed;
+        // } catch (e) {
+        //   Logger.error("void startPlay()  播放音乐出现了异常：$e");
+        // }
       }
     }
   }
