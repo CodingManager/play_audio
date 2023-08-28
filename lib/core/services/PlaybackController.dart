@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/src/foundation/change_notifier.dart';
 import 'package:play_audio/core/models/SLAudioModel.dart';
@@ -31,7 +33,7 @@ class PlaybackController with ChangeNotifier {
       _audioPlayer.setVolume(playVolume);
 
       // 监听播放进度
-      _audioPlayer.onPositionChanged.listen((event) {
+      _audioPlayer.onPositionChanged.listen((event) async {
         Logger.debug("onPositionChanged : $event");
       });
 
@@ -39,23 +41,23 @@ class PlaybackController with ChangeNotifier {
       _audioPlayer.onPlayerStateChanged.listen((PlayerState state) {
         playerState = state;
         Logger.debug("播放器状态: $state");
-        switch (state){
-          case PlayerState.playing:
-            Logger.debug("播放");
-            break;
-          case PlayerState.paused:
-            Logger.debug("暂停播放");
-            break;
-          case PlayerState.stopped:
-            Logger.debug("停止播放");
-            break;
-          case PlayerState.completed:
-            Logger.debug("播放结束");
-            break;
-          case PlayerState.disposed:
-            Logger.debug("播放销毁");
-            break;
-        }
+        // switch (state){
+        //   case PlayerState.playing:
+        //     Logger.debug("播放");
+        //     break;
+        //   case PlayerState.paused:
+        //     Logger.debug("暂停播放");
+        //     break;
+        //   case PlayerState.stopped:
+        //     Logger.debug("停止播放");
+        //     break;
+        //   case PlayerState.completed:
+        //     Logger.debug("播放结束");
+        //     break;
+        //   case PlayerState.disposed:
+        //     Logger.debug("播放销毁");
+        //     break;
+        // }
         notifyListeners();
       });
 
@@ -104,7 +106,14 @@ class PlaybackController with ChangeNotifier {
         // 播放音频
         try {
           await _audioPlayer.play(UrlSource(audioModel.playUrl!));
-        } catch(e) {
+        } on TimeoutException {
+          Logger.error("播放音频超时");
+          // 如果播放音频超时，直接设置播放状态为播放结束，这样就不会再有回调了。
+          // _audioPlayer.state = PlayerState.completed;
+          _audioPlayer.stop();
+        } on AudioPlayerException {
+          Logger.error("播放音频出现了异常");
+        } catch (e) {
           Logger.error("void startPlay()  播放音乐出现了异常：$e");
         }
       }

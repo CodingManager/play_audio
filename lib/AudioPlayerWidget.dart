@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:play_audio/core/models/SLAudioModel.dart';
 import 'package:play_audio/core/utils/Logger.dart';
@@ -12,16 +13,38 @@ class AudioPlayerWidget extends StatefulWidget{
   State createState() => _AudioPlayerWidgetState();
 }
 
-class _AudioPlayerWidgetState extends State<AudioPlayerWidget>{
+class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProviderStateMixin {
+
+  // 播放动画控制器
+  late final AnimationController _animationController;
+
+  /// 线性动画
+  late final Animation<double> _linearAnimation;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    // 创建动画控制器
+    _animationController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    );
+    //
+    // // 创建线性动画
+    _linearAnimation = Tween<double>(begin: 0, end: 1).animate(_animationController);
+  }
 
   // 创建一些假数据，用于测试。
   final List<SlAudioModel> audioGroup = [
-    SlAudioModel(title: "Song 1", playUrl: "https://cloud.seatable.cn/seafhttp/files/86678244-f503-4671-a832-e50a18eff923/Emily%20Hearn%20-%20I%E2%80%99m%20Fine.mp3"),
-    SlAudioModel(title: "Song 2", playUrl: "https://lh-sycdn.kuwo.cn/93d630e1d006d068cdf515477a4b944c/64e8a8dd/resource/n1/24/83/805920657.mp3"),
-    SlAudioModel(title: "Song 3", playUrl: "https://lk-sycdn.kuwo.cn/61fcce8dacf3e5f1354249137232cdbf/64e8a82e/resource/n2/7/64/655420780.mp3"),
-    SlAudioModel(title: "Song 4", playUrl: "https://lk-sycdn.kuwo.cn/2b0924b01b36bd2a372c9ddd72c5aeae/64e8a843/resource/n3/36/48/4080861161.mp3"),
-    SlAudioModel(title: "Song 5", playUrl: "https://lj-sycdn.kuwo.cn/920b2a6eceb78094829cc23cd2c405a8/64e8a8a8/resource/n1/95/57/3577134560.mp3"),
-  ];
+    SlAudioModel(title: "Song 1", playUrl: "https://cb-sycdn.kuwo.cn/c71e318e21669f4032a6f992bc33bf8e/64ec6d77/resource/n3/4/5/531980630.mp3"),
+    SlAudioModel(title: "Song 2", playUrl: "http://172.16.27.134:8000/static/audio/1b88ce75-1735-42a3-9507-2e696d86b2a0.mp3"),
+    SlAudioModel(title: "Song 3", playUrl: "http://172.16.27.134:8000/static/audio/1d83e3f9-bd2d-4962-8286-96cfaa0933b3.mp3"),
+    SlAudioModel(title: "Song 4", playUrl: "http://172.16.27.134:8000/static/audio/2e358d5c-59ce-4a31-9bad-6cf7716cea38.flac"),
+    SlAudioModel(title: "Song 5", playUrl: "http://172.16.27.134:8000/static/audio/4fe53f09-e31a-43ca-8134-60807c5045b1.mp3"),
+    SlAudioModel(title: "Song 6", playUrl: "http://172.16.27.134:8000/static/audio/4bcafb48-65e3-4537-941f-faae89434372.mp3"),
+
+   ];
 
   @override
   Widget build(BuildContext context) {
@@ -32,13 +55,18 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>{
       appBar: AppBar(title: Text('Music Player')),
       body: Column(
         children: [
-          // 音乐封面图片显示
-          Container(
-            width: 300,
-            height: 300,
-            child: Image.asset('assets/audio/images/play_controll_default_cover_01.png',fit: BoxFit.fill),
+          RotationTransition(
+            turns: _linearAnimation,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(width: 2),
+                image: DecorationImage(image: AssetImage('assets/audio/images/play_controll_default_cover_01.png'), fit: BoxFit.fill),
+              ),
+            ),
           ),
-
           // 播放列表
           Expanded(child: _PlaylistWidget()),
 
@@ -50,7 +78,25 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>{
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Consumer<PlaybackController>(builder: (context, PlaybackController playbackController, child) {
-                Logger.debug(playbackController.playerState);
+
+                switch (playbackController.playerState) {
+                  case PlayerState.playing:
+                    // 播放动画
+                    _animationController.repeat();
+                    break;
+                  case PlayerState.paused:
+                    _animationController.stop();
+                    break;
+                  case PlayerState.stopped:
+                    _animationController.stop();
+                    break;
+                  case PlayerState.completed:
+                    break;
+                  case PlayerState.disposed:
+                    break;
+                    // TODO: Handle this case.
+                }
+
                 return Text("播放状态");
               }),
 

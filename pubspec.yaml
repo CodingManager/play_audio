@@ -30,7 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_sound: ^9.2.13
+#  flutter_sound: ^9.2.13
   audio_service: ^0.18.10
   audioplayers: ^5.1.0
   provider: ^6.0.5
