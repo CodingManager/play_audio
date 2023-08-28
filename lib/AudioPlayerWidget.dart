@@ -47,24 +47,23 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
   @override
   Widget build(BuildContext context) {
 
-    final playbackController = context.watch<PlaybackController>();
 
     return Scaffold(
       appBar: AppBar(title: Text('Music Player')),
       body: Column(
         children: [
-          // RotationTransition(
-          //   turns: _linearAnimation,
-          //   child: Container(
-          //     width: 200,
-          //     height: 200,
-          //     decoration: BoxDecoration(
-          //       shape: BoxShape.circle,
-          //       border: Border.all(width: 2),
-          //       image: DecorationImage(image: AssetImage('assets/audio/images/play_controll_default_cover_01.png'), fit: BoxFit.fill),
-          //     ),
-          //   ),
-          // ),
+          RotationTransition(
+            turns: _linearAnimation,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(width: 2),
+                image: DecorationImage(image: AssetImage('assets/audio/images/play_controll_default_cover_01.png'), fit: BoxFit.fill),
+              ),
+            ),
+          ),
           // 播放列表
           Expanded(child: _PlaylistWidget()),
 
