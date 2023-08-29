@@ -2,6 +2,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:play_audio/core/models/SLAudioModel.dart';
 import 'package:play_audio/core/utils/Logger.dart';
+import 'package:play_audio/core/utils/PlayerAudioEnum.dart';
 import 'package:provider/provider.dart';
 
 import 'core/services/PlaybackController.dart';
@@ -27,7 +28,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
     super.initState();
     // 创建动画控制器
     _animationController = AnimationController(
-      duration: const Duration(seconds: 3),
+      duration: const Duration(seconds: 5),
       vsync: this,
     );
     //
@@ -44,6 +45,33 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
 
    ];
 
+
+  Widget loadingWidget() {
+
+    return Consumer<PlaybackController>(builder: (context, PlaybackController playbackController, child) {
+      switch (playbackController.playerState) {
+        case MyPlayerState.loading:
+          _animationController.repeat();
+          return CircularProgressIndicator(color: Colors.yellow, strokeWidth: 2.0);
+        case MyPlayerState.playing:
+          _animationController.repeat();
+          break;
+        case MyPlayerState.paused:
+          _animationController.stop();
+          break;
+        case MyPlayerState.stopped:
+          _animationController.stop();
+          break;
+        default:
+          break;
+      }
+      // 返回一个什么都不显示的widget
+      return Container();
+    });
+
+  }
+
+
   @override
   Widget build(BuildContext context) {
 
@@ -52,6 +80,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
       appBar: AppBar(title: Text('Music Player')),
       body: Column(
         children: [
+
           RotationTransition(
             turns: _linearAnimation,
             child: Container(
@@ -62,6 +91,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
                 border: Border.all(width: 2),
                 image: DecorationImage(image: AssetImage('assets/audio/images/play_controll_default_cover_01.png'), fit: BoxFit.fill),
               ),
+              child: loadingWidget(),
             ),
           ),
           // 播放列表
@@ -74,29 +104,8 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Consumer<PlaybackController>(builder: (context, PlaybackController playbackController, child) {
-
-                switch (playbackController.playerState) {
-                  case PlayerState.playing:
-                    // 播放动画
-                    _animationController.repeat();
-                    break;
-                  case PlayerState.paused:
-                    _animationController.stop();
-                    break;
-                  case PlayerState.stopped:
-                    _animationController.stop();
-                    break;
-                  case PlayerState.completed:
-                    break;
-                    // TODO: Handle this case.
-                }
-
-                return Text("播放状态");
-              }),
-
               IconButton(icon: Icon(Icons.skip_previous), onPressed: () => context.read<PlaybackController>().previous()),
-              IconButton(icon: Icon(Icons.play_arrow), onPressed: () => context.read<PlaybackController>().setPlayList(audioGroup, 0, isPlay: true)),
+              IconButton(icon: Icon(Icons.play_arrow), onPressed: () => context.read<PlaybackController>().setPlayList(audioGroup,0, playIndex:0, isPlay: true)),
               IconButton(icon: Icon(Icons.pause), onPressed: () => context.read<PlaybackController>().pause()),
               IconButton(icon: Icon(Icons.stop), onPressed: () => context.read<PlaybackController>().stop()),
               IconButton(icon: Icon(Icons.skip_next), onPressed: () => context.read<PlaybackController>().next()),

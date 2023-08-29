@@ -12,11 +12,19 @@ enum CycleType {
 /// 这是一个播放列表，用于管理播放列表的播放顺序。
 class SLAudioPlayList {
 
+  // 播放列表数据
   List<SlAudioModel> songList = [];
-
+  // 当前播放的索引
   int index = 0;
-
+  // 循环模式
   CycleType cycleType = CycleType.queue;
+  // 当前播放的歌曲
+  SlAudioModel? currentPlayAudio;
+
+  void setCurrentPlayAudio(SlAudioModel audio) {
+    currentPlayAudio = audio;
+  }
+
 
   // 清除播放列表，这里需要考虑到播放列表的唯一性，所以需要判断是否已经存在。
   void clear() {
@@ -35,7 +43,7 @@ class SLAudioPlayList {
   }
 
   /// 获取当前播放的歌曲
-  SlAudioModel? getCurrentAudio() {
+  SlAudioModel? getCurrentIndexAudioModel() {
     if (songList.isEmpty) {
       return null;
     }
