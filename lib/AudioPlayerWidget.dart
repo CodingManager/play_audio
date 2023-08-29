@@ -1,11 +1,12 @@
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:play_audio/core/models/SLAudioModel.dart';
 import 'package:play_audio/core/utils/Logger.dart';
 import 'package:play_audio/core/utils/PlayerAudioEnum.dart';
 import 'package:provider/provider.dart';
 
 import 'core/services/PlaybackController.dart';
+
 
 class AudioPlayerWidget extends StatefulWidget{
   const AudioPlayerWidget({super.key});
@@ -38,28 +39,31 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
 
   // 创建一些假数据，用于测试。
   final List<SlAudioModel> audioGroup = [
-    SlAudioModel(title: "香云缎", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/xiangyunduan.mp3"),
+    SlAudioModel(title: "向云端", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/xiangyunduan.mp3"),
     SlAudioModel(title: "Song 3", playUrl: "https://6v05y2726.goho.co/static/audio/1d83e3f9-bd2d-4962-8286-96cfaa0933b3.mp3"),
     SlAudioModel(title: "Song 5", playUrl: "https://6v05y2726.goho.co/static/audio/4fe53f09-e31a-43ca-8134-60807c5045b1.mp3"),
     SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/audio/4bcafb48-65e3-4537-941f-faae89434372.mp3"),
+    SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/2022120519422118e8d.mp3"),
+    SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/2022120519422112dfe.mp3"),
+    SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/2022120519422114e23.mp3"),
+    SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/2022120519422118e8d.mp3"),
 
    ];
+  // AudioSource.uri(Uri.parse('https://6v05y2726.goho.co/static/media/audios/21/xiangyunduan.mp3')),
+  // AudioSource.uri(Uri.parse('https://6v05y2726.goho.co/static/media/audios/21/2022120519422118e8d.mp3')),
+  // AudioSource.uri(Uri.parse('https://6v05y2726.goho.co/static/media/audios/21/2022120519422114e23.mp3')),
+  // AudioSource.uri(Uri.parse('https://6v05y2726.goho.co/static/media/audios/21/2022120519422112dfe.mp3')),
+  // AudioSource.uri(Uri.parse('https://6v05y2726.goho.co/static/media/audios/21/2022120519422118e8d.mp3')),
 
 
   Widget loadingWidget() {
 
     return Consumer<PlaybackController>(builder: (context, PlaybackController playbackController, child) {
       switch (playbackController.playerState) {
-        case MyPlayerState.loading:
+        case ProcessingState.loading || ProcessingState.buffering:
           _animationController.repeat();
           return CircularProgressIndicator(color: Colors.yellow, strokeWidth: 2.0);
-        case MyPlayerState.playing:
-          _animationController.repeat();
-          break;
-        case MyPlayerState.paused:
-          _animationController.stop();
-          break;
-        case MyPlayerState.stopped:
+        case ProcessingState.completed || ProcessingState.idle:
           _animationController.stop();
           break;
         default:
@@ -95,7 +99,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
             ),
           ),
           // 播放列表
-          Expanded(child: _PlaylistWidget()),
+          Expanded(child: _buildPlayerListWidget()),
 
           // 音频电平可视化
           _AudioLevelWidget(),
@@ -105,7 +109,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(icon: Icon(Icons.skip_previous), onPressed: () => context.read<PlaybackController>().previous()),
-              IconButton(icon: Icon(Icons.play_arrow), onPressed: () => context.read<PlaybackController>().setPlayList(audioGroup,0, playIndex:0, isPlay: true)),
+              IconButton(icon: Icon(Icons.play_arrow), onPressed: () => context.read<PlaybackController>().play()),
               IconButton(icon: Icon(Icons.pause), onPressed: () => context.read<PlaybackController>().pause()),
               IconButton(icon: Icon(Icons.stop), onPressed: () => context.read<PlaybackController>().stop()),
               IconButton(icon: Icon(Icons.skip_next), onPressed: () => context.read<PlaybackController>().next()),
@@ -133,28 +137,26 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
     );
   }
 
-}
-
-
-
-class _PlaylistWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    // 假设你有一个歌曲列表
-    List<String> songs = ['Song 1', 'Song 2', 'Song 3'];
-    return ListView.builder(
-      itemCount: songs.length,
+  Widget _buildPlayerListWidget() {
+    ListView listView = ListView.builder(
+      itemCount: audioGroup.length,
       itemBuilder: (context, index) {
         return ListTile(
-          title: Text(songs[index]),
+          title: Text(audioGroup[index].title!),
           onTap: () {
-            // 播放选中的歌曲
+            context.read<PlaybackController>().setPlayListWithPlay(audioGroup, 0, playIndex: index);
+            // context.read<PlaybackController>().play();
           },
         );
       },
     );
+
+    return listView;
   }
+
 }
+
+
 
 class _AudioLevelWidget extends StatelessWidget {
   @override

@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:just_audio/just_audio.dart';
+
 import 'SLAudioModel.dart';
 
 // 循环模式
@@ -12,6 +14,13 @@ enum CycleType {
 /// 这是一个播放列表，用于管理播放列表的播放顺序。
 class SLAudioPlayList {
 
+  /// 播放列表
+  final playlist = ConcatenatingAudioSource(
+      useLazyPreparation: true,
+      shuffleOrder: DefaultShuffleOrder(),
+      children: []);
+
+
   // 播放列表数据
   List<SlAudioModel> songList = [];
   // 当前播放的索引
@@ -21,6 +30,7 @@ class SLAudioPlayList {
   // 当前播放的歌曲
   SlAudioModel? currentPlayAudio;
 
+  /// 设置当前播放的音频模型
   void setCurrentPlayAudio(SlAudioModel audio) {
     currentPlayAudio = audio;
   }
@@ -29,17 +39,28 @@ class SLAudioPlayList {
   // 清除播放列表，这里需要考虑到播放列表的唯一性，所以需要判断是否已经存在。
   void clear() {
     songList.clear();
+    playlist.clear();
     index = 0;
   }
 
   /// 设置播放列表，必须是 SlAudioModel 模型。
   setPlayList(List<SlAudioModel> audios, int playIndex) {
+    playlist.clear();
     songList = audios;
+    for (SlAudioModel element in audios) {
+      playlist.add(AudioSource.uri(Uri.parse(element.playUrl!)));
+    }
     index = playIndex;
   }
 
+  /// 修改播放列表的索引，用于切换播放的音频。
   setCurrentIndex(int index) {
+    // 修改 playlist 的索引
+    playlist.move(this.index, index);
+
     this.index = index;
+
+
   }
 
   /// 获取当前播放的歌曲
