@@ -1,7 +1,10 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:play_audio/core/models/SLAudioModel.dart';
 import 'package:play_audio/core/utils/Logger.dart';
+import 'package:play_audio/core/utils/MusicListener.dart';
 import 'package:play_audio/core/utils/PlayerAudioEnum.dart';
 import 'package:provider/provider.dart';
 
@@ -22,7 +25,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
 
   /// 线性动画
   late final Animation<double> _linearAnimation;
-
+  late PlaybackController _playbackController;
   @override
   void initState() {
     // TODO: implement initState
@@ -35,18 +38,29 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
     //
     // // 创建线性动画
     _linearAnimation = Tween<double>(begin: 0, end: 1).animate(_animationController);
+    // context.read<PlaybackController>().addMusicListener(MusicListener(
+    //   onPosition: (){
+    //
+    //   }
+    // ));
+
+    _playbackController = context.read<PlaybackController>();
+
   }
 
   // 创建一些假数据，用于测试。
   final List<SlAudioModel> audioGroup = [
     SlAudioModel(title: "向云端", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/xiangyunduan.mp3"),
-    SlAudioModel(title: "Song 3", playUrl: "https://6v05y2726.goho.co/static/audio/1d83e3f9-bd2d-4962-8286-96cfaa0933b3.mp3"),
-    SlAudioModel(title: "Song 5", playUrl: "https://6v05y2726.goho.co/static/audio/4fe53f09-e31a-43ca-8134-60807c5045b1.mp3"),
-    SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/audio/4bcafb48-65e3-4537-941f-faae89434372.mp3"),
-    SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/2022120519422118e8d.mp3"),
-    SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/2022120519422112dfe.mp3"),
-    SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/2022120519422114e23.mp3"),
-    SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/2022120519422118e8d.mp3"),
+    SlAudioModel(title: "Song 3", playUrl: "https://6v05y2726.goho.co/static/media/audios/20/a1.mp3"),
+    SlAudioModel(title: "Song 4", playUrl: "https://6v05y2726.goho.co/static/media/audios/20/a2.mp3"),
+    SlAudioModel(title: "Song 5", playUrl: "https://6v05y2726.goho.co/static/media/audios/20/a3.mp3"),
+    SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/media/audios/20/a4.mp3"),
+    SlAudioModel(title: "Song 7", playUrl: "https://6v05y2726.goho.co/static/media/audios/20/a5.mp3"),
+    SlAudioModel(title: "Song 8", playUrl: "https://6v05y2726.goho.co/static/media/audios/20/a6.mp3"),
+    // SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/2022120519422118e8d.mp3"),
+    // SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/2022120519422112dfe.mp3"),
+    // SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/2022120519422114e23.mp3"),
+    // SlAudioModel(title: "Song 6", playUrl: "https://6v05y2726.goho.co/static/media/audios/21/2022120519422118e8d.mp3"),
 
    ];
   // AudioSource.uri(Uri.parse('https://6v05y2726.goho.co/static/media/audios/21/xiangyunduan.mp3')),
@@ -60,11 +74,13 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
 
     return Consumer<PlaybackController>(builder: (context, PlaybackController playbackController, child) {
       switch (playbackController.playerState) {
-        case ProcessingState.loading || ProcessingState.buffering:
+        case SLPlayerState.loading:
           _animationController.repeat();
           return CircularProgressIndicator(color: Colors.yellow, strokeWidth: 2.0);
-        case ProcessingState.completed || ProcessingState.idle:
+        case SLPlayerState.stopped || SLPlayerState.paused || SLPlayerState.completed:
           _animationController.stop();
+        case SLPlayerState.playing:
+          _animationController.repeat();
           break;
         default:
           break;
@@ -108,22 +124,40 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              IconButton(icon: Icon(Icons.skip_previous), onPressed: () => context.read<PlaybackController>().previous()),
-              IconButton(icon: Icon(Icons.play_arrow), onPressed: () => context.read<PlaybackController>().play()),
-              IconButton(icon: Icon(Icons.pause), onPressed: () => context.read<PlaybackController>().pause()),
-              IconButton(icon: Icon(Icons.stop), onPressed: () => context.read<PlaybackController>().stop()),
-              IconButton(icon: Icon(Icons.skip_next), onPressed: () => context.read<PlaybackController>().next()),
+              IconButton(icon: Icon(Icons.skip_previous), onPressed: () {
+                _playbackController.previous();
+                SlAudioModel mode = audioGroup[_playbackController.playIndex];
+                Logger.debug('播放上一首: ${mode.title}');
+              }),
+              IconButton(icon: Icon(Icons.play_arrow), onPressed: (){
+                _playbackController.play();
+                SlAudioModel mode = audioGroup[_playbackController.playIndex];
+                Logger.debug('播放: ${mode.title}');
+              }),
+              IconButton(icon: Icon(Icons.pause), onPressed: () => _playbackController.pause()),
+              IconButton(icon: Icon(Icons.stop), onPressed: () => _playbackController.stop()),
+              IconButton(icon: Icon(Icons.skip_next), onPressed: (){
+                _playbackController.next();
+                SlAudioModel mode = audioGroup[_playbackController.playIndex];
+                Logger.debug('播放下一首: ${mode.title}');
+              }),
             ],
           ),
 
           // 音量控制
-          Slider(
-            value: 0.5, // 默认值，你可以根据实际情况进行绑定
-            onChanged: (value) => {
-              // 实现音量控制
-              Logger.debug(value)
+          Consumer<PlaybackController>(builder: (context, PlaybackController playbackController, child) {
+
+            return Slider(
+              value: playbackController.progress,
+              onChanged: (double value) {
+
+                int millSeconds = (value * playbackController.totalDurationInMilliseconds).toInt();
+
+                playbackController.seek(millSeconds);
+                Logger.debug('onChanged: $millSeconds');
             },
-          ),
+            );
+          }),
 
           // 本地下载按钮
           ElevatedButton(
@@ -144,7 +178,9 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
         return ListTile(
           title: Text(audioGroup[index].title!),
           onTap: () {
-            context.read<PlaybackController>().setPlayListWithPlay(audioGroup, 0, playIndex: index);
+            _playbackController.setPlayListWithPlay(audioGroup, 0, playIndex: index);
+            SlAudioModel mode = audioGroup[_playbackController.playIndex];
+            Logger.debug('播放: ${mode.title}');
             // context.read<PlaybackController>().play();
           },
         );
@@ -161,6 +197,12 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> with TickerProvid
 class _AudioLevelWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+
+    context.read<PlaybackController>().addMusicListener(MusicListener(
+      getName: (){
+        Logger.debug("播放的名字");
+      }
+    ));
     // 这里你可以使用 flutter_sound 或其他库来实现音频电平的可视化
     return Container(
       height: 50,

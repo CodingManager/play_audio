@@ -10,6 +10,14 @@ import '../utils/Logger.dart';
 import '../utils/MusicListener.dart';
 
 
+enum SLPlayerState {
+  loading,// 音频正在加载
+  playing, // 播放中
+  paused, // 暂停
+  stopped,// 停止
+  completed,// 播放完成
+}
+
 class PlaybackController with ChangeNotifier {
 
   /// 音频播放器
@@ -21,11 +29,20 @@ class PlaybackController with ChangeNotifier {
       shuffleOrder: DefaultShuffleOrder(),
       children: []);
 
+  Duration _totalDuration = const Duration(milliseconds: 1); // 初始化为1以避免除以0的错误
+
+  Duration _currentPosition = Duration.zero;
+
+
+  double get progress => _currentPosition.inMilliseconds / _totalDuration.inMilliseconds;
+
+
   /// 音频播放状态
-  ProcessingState playerState = ProcessingState.idle;
+  // PlayerState playerState = PlayerState(false, ProcessingState.loading);
+  SLPlayerState playerState = SLPlayerState.stopped;
 
   /// 播放进度
-  int duration = 0;
+  double duration = 0;
 
   /// 播放音量
   double playVolume = 1.0;
@@ -41,6 +58,8 @@ class PlaybackController with ChangeNotifier {
   /// 使用一个变量来区别当前播放的音乐列表，用于切换播放列表时，判断是否需要重新加载音乐。
   int groupId = -1;
 
+  // 获取音频的总时长（毫秒）
+  int get totalDurationInMilliseconds => _totalDuration.inMilliseconds;
 
 
   AudioPlayer get getAudioPlayer => _audioPlayer;
@@ -59,24 +78,88 @@ class PlaybackController with ChangeNotifier {
       _audioPlayer.setAudioSource(_playlist);
 
       // 监听播放进度
-      _audioPlayer.positionStream.listen((value) {
+      _audioPlayer.positionStream.listen((Duration value) {
+        // 把 Duration 转换成毫秒，这个变量用于进度条，需要使用浮点数。
+        _currentPosition = value;
+        notifyListeners();
 
-        duration = value.inMilliseconds;
-        notifyMusicListeners((listener) {
-          listener.onPositionChanged(duration);
-        });
+        // Logger.info("播放进度：$progress");
       },onError: (e){
         Logger.error(e);
       },onDone:(){
 
       });
 
+      // 监听播放时长
+      _audioPlayer.durationStream.listen((value) {
+        if (value != null) {
+          _totalDuration = value;
+          Logger.debug("音频的播放时长: $value");
+        }
 
 
+        // notifyMusicListeners((listener) {
+        //   listener.onDurationChanged(value);
+        // });
+      },onError: (e){
+        Logger.error(e);
+      },onDone:(){
+
+      });
+      //
+      // _audioPlayer.playbackEventStream.listen((event) {
+      //   Logger.debug("播放事件: $event");
+      // },onError: (e){
+      //   Logger.error(e);
+      // },onDone:(){
+      //
+      // });
+
+      _audioPlayer.sequenceStream.listen((value) {
+        Logger.debug("播放列表发生变化: $value");
+        // playIndex = value;
+        notifyListeners();
+      },onError: (e){
+        Logger.error(e);
+      },onDone:(){
+
+      });
+      // _audioPlayer.sequenceStateStream.listen((value) {
+      //   Logger.debug("播放列表状态发生变化: $value");
+      //
+      //   // playIndex = value;
+      //   notifyListeners();
+      // },onError: (e){
+      //   Logger.error(e);
+      // },onDone:(){
+      //
+      // });
+
+      _audioPlayer.currentIndexStream.listen((value) {
+        Logger.debug("当前播放的音频索引: $value");
+        if (value != null){
+          playIndex = value;
+        }
+        notifyListeners();
+      },onError: (e){
+        Logger.error(e);
+      },onDone:(){
+
+      });
       // 监听播放状态
       _audioPlayer.playerStateStream.listen((PlayerState state) {
         Logger.debug("播放状态发生变化: $state");
-        playerState = state.processingState;
+        if (state.processingState == ProcessingState.ready && state.playing){
+          playerState = SLPlayerState.playing;
+        }else if (state.processingState == ProcessingState.buffering && state.playing){
+          playerState = SLPlayerState.loading;
+        }else if (state.processingState == ProcessingState.completed && state.playing == false) {
+          playerState = SLPlayerState.completed;
+        }else if (state.processingState == ProcessingState.loading){
+          playerState = SLPlayerState.loading;
+        }else if (state.playing == false && state.processingState == ProcessingState.ready){
+          playerState = SLPlayerState.paused;
+        }
         notifyListeners();
         // notifyMusicListeners((listener) {
         //   listener.onPlayerStateChanged(playerState);
@@ -87,17 +170,6 @@ class PlaybackController with ChangeNotifier {
 
       });
 
-      // 监听播放时长
-      _audioPlayer.durationStream.listen((value) {
-        Logger.debug("音频的播放时长: $value");
-        notifyMusicListeners((listener) {
-          listener.onDurationChanged(value);
-        });
-      },onError: (e){
-        Logger.error(e);
-      },onDone:(){
-
-      });
 
       //
       // // 监听播放进度
@@ -111,34 +183,6 @@ class PlaybackController with ChangeNotifier {
 
   }
 
-
-
-
-
-  /// 播放网络音频
-  Future _startPlay(String url) async {
-
-    // 切换播放状态，加载中。
-    playerState = ProcessingState.loading;
-    notifyListeners();
-    // 重置播放进度
-    duration = 0;
-    // 更新当前播放的音频
-
-
-
-    //播放音频
-    try {
-      await _audioPlayer.play();
-    } on TimeoutException {
-      Logger.error("播放音频超时");
-      // 如果播放音频超时，直接设置播放状态为播放结束，这样就不会再有回调了。
-      // _audioPlayer.state = PlayerState.completed;
-    } catch (e) {
-      Logger.error("void startPlay()  播放音乐出现了异常：$e");
-    }
-
-  }
 
   /// 设置播放列表，这个方式只设置数据，默认并不会播放，需要调用【startPlay】接口才会播放，
   /// 参数说明：
@@ -169,7 +213,8 @@ class PlaybackController with ChangeNotifier {
       _playlist.clear(); // 先清除播放列表
       for (SlAudioModel element in audioGroup) {
         if (element.playUrl != null) {
-          _playlist.add(AudioSource.uri(Uri.parse(element.playUrl!)));
+          AudioSource audioSource = LockCachingAudioSource(Uri.parse(element.playUrl!));
+          _playlist.add(audioSource);
         }
       }
       this.groupId = groupId;
@@ -214,7 +259,7 @@ class PlaybackController with ChangeNotifier {
 
   // Pause the current track
   Future<void> pause() async {
-    if (playerState == ProcessingState.ready) {
+    if (playerState == SLPlayerState.playing) {
       await _audioPlayer.pause();
     }
   }
@@ -222,13 +267,13 @@ class PlaybackController with ChangeNotifier {
   // Stop the current track
   Future<void> stop() async {
     // 判断播放状态,是否需要停止
-    if (playerState == ProcessingState.ready) {
+    if (playerState == SLPlayerState.playing) {
       await _audioPlayer.stop();
     }
   }
 
   Future<void> play() async {
-    if (_audioPlayer.playing == false && playerState == ProcessingState.ready) {
+    if (playerState != SLPlayerState.playing) {
       await _audioPlayer.play();
     }
   }
@@ -236,25 +281,38 @@ class PlaybackController with ChangeNotifier {
 
   // 播放下一首
   Future<void> next() async {
-    // 1. 先从播放列表中获取下一首音频
 
+    // 1. 先从播放列表中获取下一首音频
     if (_playlist.children.isEmpty) {
       Logger.debug("当前播放列表为空，不能播放");
       return;
     }else {
-      Logger.debug("下一首");
 
+      if (_playlist.children.length <0 || playIndex >= _playlist.children.length - 1) {
+        playIndex = 0;
+      }else {
+        playIndex++;
+      }
+
+      Logger.debug("下一首");
       await _audioPlayer.seekToNext();
     }
   }
 
   // 播放上一首
   Future<void> previous() async {
-    // 1. 先从播放列表中获取上一首音频
+    // 1. 先从播放列表中获取下一首音频
     if (_playlist.children.isEmpty) {
       Logger.debug("当前播放列表为空，不能播放");
       return;
     }else {
+
+      if (playIndex <= 0) {
+        playIndex = _playlist.children.length - 1;
+      }else {
+        playIndex--;
+      }
+
       Logger.debug("上一首");
       await _audioPlayer.seekToPrevious();
     }
